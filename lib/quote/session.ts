@@ -1,7 +1,7 @@
-// DO NOT touch window/localStorage at module top-level.
-// Only inside functions, and guard with typeof window.
+// lib/quote/session.ts
+// SSR/Edge-safe localStorage helpers (no direct 'window' references)
 
-type Draft = {
+export type Draft = {
   projectName?: string;
   clientName?: string;
   email?: string;
@@ -15,26 +15,40 @@ type Draft = {
 
 const KEY = "quote-draft";
 
-export function loadDraft(): Draft | null {
-  if (typeof window === "undefined") return null;
+function getStorage(): Storage | null {
+  // Works in browsers only; safe in Node/Edge/prerender
+  if (typeof globalThis === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(KEY);
-    return raw ? JSON.parse(raw) : null;
+    const ls = (globalThis as any).localStorage as Storage | undefined;
+    return ls ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function loadDraft(): Draft | null {
+  const ls = getStorage();
+  if (!ls) return null;
+  try {
+    const raw = ls.getItem(KEY);
+    return raw ? (JSON.parse(raw) as Draft) : null;
   } catch {
     return null;
   }
 }
 
 export function saveDraft(draft: Draft) {
-  if (typeof window === "undefined") return;
+  const ls = getStorage();
+  if (!ls) return;
   try {
-    window.localStorage.setItem(KEY, JSON.stringify(draft));
+    ls.setItem(KEY, JSON.stringify(draft));
   } catch {}
 }
 
 export function clearDraft() {
-  if (typeof window === "undefined") return;
+  const ls = getStorage();
+  if (!ls) return;
   try {
-    window.localStorage.removeItem(KEY);
+    ls.removeItem(KEY);
   } catch {}
 }

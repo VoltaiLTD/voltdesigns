@@ -1,39 +1,40 @@
-// Simple helpers to persist design data between pages
-const KEY = "voltDesignDraft";
+// DO NOT touch window/localStorage at module top-level.
+// Only inside functions, and guard with typeof window.
 
-export type DesignDraft = {
-  projectName: string;
-  clientName: string;
-  email: string;
-  billingMode: string;
-  sqm: number;
-  boards: number;
-  fulfillment: string;
-  selectedSlugs: string[];
-  selectedPaths: string[];
-  imageUrl: string;
-  category: "acp" | "wpc" | "acoustic";
-  paletteId: string;
-  description: string;
+type Draft = {
+  projectName?: string;
+  clientName?: string;
+  email?: string;
+  billingMode?: "sqm" | "board";
+  sqm?: number;
+  boards?: number;
+  fulfillment?: "installation" | "delivery";
+  selectedSlugs?: string[];
+  selectedPaths?: string[];
 };
 
-export function saveDraft(draft: DesignDraft) {
-  if (typeof window === "undefined") return;
-  sessionStorage.setItem(KEY, JSON.stringify(draft));
-}
+const KEY = "quote-draft";
 
-export function loadDraft(): DesignDraft | null {
+export function loadDraft(): Draft | null {
   if (typeof window === "undefined") return null;
-  const raw = sessionStorage.getItem(KEY);
-  if (!raw) return null;
   try {
-    return JSON.parse(raw) as DesignDraft;
+    const raw = window.localStorage.getItem(KEY);
+    return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
 }
 
+export function saveDraft(draft: Draft) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(KEY, JSON.stringify(draft));
+  } catch {}
+}
+
 export function clearDraft() {
   if (typeof window === "undefined") return;
-  sessionStorage.removeItem(KEY);
+  try {
+    window.localStorage.removeItem(KEY);
+  } catch {}
 }

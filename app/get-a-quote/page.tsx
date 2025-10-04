@@ -1,8 +1,9 @@
-
+// app/get-a-quote/page.tsx
 "use client";
 export const dynamic = "force-dynamic";
-export const revalidate = 0;
-import { useEffect, useMemo, useState } from "react";
+export const fetchCache = "force-no-store";
+
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { loadDraft, clearDraft } from "@/lib/quote/session";
@@ -18,6 +19,14 @@ const toFulfillment = (v: string): Fulfillment =>
   v === "installation" || v === "delivery" ? v : "installation";
 
 export default function GetAQuotePage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-gray-500">Loading quote form…</div>}>
+      <GetAQuoteInner />
+    </Suspense>
+  );
+}
+
+function GetAQuoteInner() {
   const sp = useSearchParams();
 
   // preload from AI Visualizer (materials=slugs, images=/public paths)
@@ -58,11 +67,6 @@ export default function GetAQuotePage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const chosenFromCatalog: CatalogItem[] = useMemo(
-    () => CATALOG.filter(c => selectedSlugs.includes(c.slug)),
-    [selectedSlugs]
-  );
 
   // simple estimate model (replace with your own)
   const estimate = useMemo(() => {

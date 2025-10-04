@@ -1,9 +1,7 @@
-// app/get-a-quote/page.tsx
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
 "use client";
-
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";

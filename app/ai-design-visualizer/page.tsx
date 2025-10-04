@@ -1,9 +1,7 @@
-// app/ai-design-visualizer/page.tsx  (supports ?materials= and ?images=)
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
 "use client";
-
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";

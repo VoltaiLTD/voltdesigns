@@ -1,116 +1,125 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import Link from "next/link";
+import { saveDraft } from "@/lib/quote/session";
 
-type Item = { slug: string; name: string; image: string };
-type Group = "acp" | "wpc" | "acoustics";
-
-const GROUP_LABEL: Record<Group, string> = {
-  acp: "ACP",
-  wpc: "WPC",
-  acoustics: "Acoustics",
+type Props = {
+  group: string;        // "acp" | "wpc" | "acoustic"
+  items: string[];      // array of public image paths e.g. ["/materials/acoustic/acoustic-1.jpg", ...]
+  title?: string;
+  description?: string;
 };
 
-export default function GridClient({
-  items,
-  group,
-}: {
-  items: Item[];
-  group: Group;
-}) {
-  const r = useRouter();
-  const [selected, setSelected] = useState<string[]>([]);
+export default function GridClient({ group, items, title, description }: Props) {
+  const router = useRouter();
+  const [selectedPaths, setSelectedPaths] = useState<string[]>([]);
 
-  function toggle(slug: string) {
-    setSelected((prev) =>
-      prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
+  function toggle(path: string) {
+    setSelectedPaths(prev =>
+      prev.includes(path) ? prev.filter(p => p !== path) : [...prev, path]
     );
   }
 
-  function applySelection() {
-    if (!selected.length) return alert("Select one or more materials first.");
-    // Map selected slugs to image paths
-    const paths = selected
-      .map((s) => items.find((i) => i.slug === s)?.image)
-      .filter(Boolean) as string[];
-    r.push(`/ai-design-visualizer?images=${encodeURIComponent(paths.join(","))}`);
+  // 3B: One-click add to quote
+  function selectAndQuote(path: string) {
+    // Persist to the draft (so it shows even if the user navigates around)
+    saveDraft?.({ selectedSlugs: [], selectedPaths: [path] });
+    // Also pass via querystring (Get a Quote reads ?images=...)
+    router.push(`/get-a-quote?images=${encodeURIComponent(path)}`);
   }
 
-  return (
-    <main className="px-6 py-10 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-3xl font-semibold">{GROUP_LABEL[group]}</h1>
-          <p className="text-sm text-gray-600 mt-1">
-            Pick one or more to use in your AI design.
-          </p>
-        </div>
+  // 3C: Multi-select, then proceed
+  function proceedMulti() {
+    if (!selectedPaths.length) return;
+    saveDraft?.({ selectedSlugs: [], selectedPaths });
+    const qs = new URLSearchParams();
+    qs.set("images", selectedPaths.map(encodeURIComponent).join(","));
+    router.push(`/get-a-quote?${qs.toString()}`);
+  }
 
-        <div className="flex items-center gap-2">
-          <Link href="/materials" className="text-sm underline">
-            ← Material options
-          </Link>
+  const header = useMemo(() => {
+    const labels: Record<string, string> = {
+      acp: "ACP Finishes",
+      wpc: "WPC Finishes",
+      acoustic: "Acoustic Options",
+    };
+    return title || labels[group] || "Materials";
+  }, [group, title]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-xl font-semibold">{header}</h1>
+          {description && <p className="text-sm text-gray-600 max-w-2xl">{description}</p>}
+        </div>
+        <div className="flex gap-2">
+          <Link href="/" className="text-sm underline">Home</Link>
+          <Link href="/materials" className="text-sm underline">All categories</Link>
+          <Link href="/ai-design-visualizer" className="text-sm underline">AI Visualizer</Link>
+        </div>
+      </div>
+
+      {/* Multi-select action bar */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="text-sm text-gray-700">
+          Selected: <b>{selectedPaths.length}</b>
+        </div>
+        <div className="flex gap-2">
           <button
-            onClick={applySelection}
-            className="inline-flex items-center rounded-xl px-4 py-2 border shadow hover:shadow-md disabled:opacity-60"
-            disabled={!selected.length}
-            title={selected.length ? `Apply ${selected.length} item(s)` : "Pick materials below"}
+            type="button"
+            disabled={!selectedPaths.length}
+            onClick={proceedMulti}
+            className="rounded-md border px-3 py-2 text-sm disabled:opacity-50"
           >
-            Apply {selected.length || ""} selected in AI Visualizer →
+            Proceed to Quote ({selectedPaths.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedPaths([])}
+            className="rounded-md border px-3 py-2 text-sm"
+          >
+            Clear
           </button>
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6 mt-6">
-        {items.map((m) => {
-          const isPicked = selected.includes(m.slug);
+      {/* Image grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        {items.map((p) => {
+          const isSel = selectedPaths.includes(p);
+          const label = p.split("/").pop() || p;
           return (
-            <div
-              key={m.slug}
-              className="rounded-2xl border overflow-hidden hover:shadow-md transition flex flex-col"
-            >
-              <Image
-                src={m.image}
-                alt={m.name}
-                width={1200}
-                height={675}
-                className="w-full h-auto object-cover"
-              />
-              <div className="p-3 flex-1">
-                <h2 className="text-base font-medium">{m.name}</h2>
-              </div>
-              <div className="p-3 flex items-center justify-between gap-2">
-                {/* One-click use */}
-                <Link
-                  href={`/ai-design-visualizer?images=${encodeURIComponent(
-                    m.image
-                  )}`}
-                  className="text-[12px] underline"
-                  title="Open AI Visualizer with this material"
-                >
-                  Use this in AI
-                </Link>
+            <div key={p} className={`rounded-xl overflow-hidden border ${isSel ? "ring-2 ring-blue-500" : ""}`}>
+              <button
+                type="button"
+                onClick={() => toggle(p)}
+                className="block w-full text-left"
+                title={label}
+              >
+                {/* Using <img> to avoid next/image config for public files */}
+                <img src={p} alt={label} className="w-full h-40 object-cover" />
+                <div className="px-2 py-1 text-xs">{label}</div>
+              </button>
 
-                {/* Multi-select toggle */}
+              <div className="flex items-center justify-between px-2 pb-2 gap-2">
+                {/* 3B: One-click add to quote */}
                 <button
                   type="button"
-                  onClick={() => toggle(m.slug)}
-                  className={`text-[12px] px-3 py-1 rounded-full border ${
-                    isPicked ? "bg-black text-white" : "bg-white hover:bg-gray-50"
-                  }`}
-                  aria-pressed={isPicked}
-                  title="Select multiple then apply all"
+                  onClick={() => selectAndQuote(p)}
+                  className="text-[12px] underline"
+                  title="Add to quote and go"
                 >
-                  {isPicked ? "Selected" : "Select"}
+                  Select & Get Quote
                 </button>
+                <span className="text-[12px] opacity-70">{isSel ? "Selected" : "Tap to select"}</span>
               </div>
             </div>
           );
         })}
       </div>
-    </main>
+    </div>
   );
 }

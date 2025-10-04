@@ -1,66 +1,48 @@
 // app/materials/[group]/page.tsx
-import path from "node:path";
-import { promises as fs } from "node:fs";
 import GridClient from "./GridClient";
-import Link from "next/link";
 
-type Group = "acp" | "wpc" | "acoustics";
-
-// Accept common aliases and normalize
-const GROUP_ALIASES: Record<string, Group> = {
-  acp: "acp",
-  wpc: "wpc",
-  acoustic: "acoustics",   // singular → plural
-  acoustics: "acoustics",
+type Props = {
+  params: { group: string };
 };
 
-export const dynamic = "force-static"; // OK for public assets
-
-async function listImagesFor(group: Group) {
-  const relDir = path.posix.join("materials", group);
-  const absDir = path.join(process.cwd(), "public", relDir);
-
-  let files: string[] = [];
-  try {
-    files = await fs.readdir(absDir);
-  } catch {
-    files = [];
-  }
-
-  const imgs = files.filter((f) => /\.(jpe?g|png|webp)$/i.test(f));
-  return imgs.map((fn) => {
-    const slug = fn.replace(/\.[^.]+$/, "");
-    const name = slug.replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-    const image = `/${relDir}/${fn}`;
-    return { slug, name, image };
-  });
+// Map route param to your public folder structure
+function listGroupImages(group: string): string[] {
+  // Example: 8 images per category named "<group>-1.jpg" ... "<group>-8.jpg"
+  // Adjust counts/names to match your actual files in /public/materials/<group>/...
+  const countByGroup: Record<string, number> = {
+    acp: 8,
+    wpc: 8,
+    acoustic: 8,
+  };
+  const n = countByGroup[group] ?? 0;
+  return Array.from({ length: n }, (_, i) => `/materials/${group}/${group}-${i + 1}.jpg`);
 }
 
-export default async function MaterialsGroupPage({
-  params,
-}: {
-  params: { group: string };
-}) {
-  const raw = (params.group || "").toLowerCase();
-  const group = GROUP_ALIASES[raw];
+export default function MaterialsGroupPage({ params }: Props) {
+  const group = params.group; // "acp" | "wpc" | "acoustic"
+  const items = listGroupImages(group);
 
-  // If it's not one of our groups at all, show a gentle landing instead of a hard 404
-  if (!group) {
-    return (
-      <main className="px-6 py-10 max-w-4xl mx-auto">
-        <h1 className="text-2xl font-semibold">Unknown category</h1>
-        <p className="text-sm text-gray-600 mt-2">
-          Try one of the categories below:
-        </p>
-        <div className="flex gap-3 mt-4">
-          <Link href="/materials/acp" className="underline">ACP</Link>
-          <Link href="/materials/wpc" className="underline">WPC</Link>
-          <Link href="/materials/acoustics" className="underline">Acoustics</Link>
-        </div>
-      </main>
-    );
-  }
+  // Optional copy
+  const copy: Record<string, { title: string; desc: string }> = {
+    acp: {
+      title: "ACP Finishes",
+      desc: "Explore curated ACP finishes for exterior/interior cladding and trims.",
+    },
+    wpc: {
+      title: "WPC Finishes",
+      desc: "Warm, durable WPC options suited for wall and ceiling treatments.",
+    },
+    acoustic: {
+      title: "Acoustic Options",
+      desc: "Reflectors, diffusers, absorbers, and doors—pick what fits your space.",
+    },
+  };
 
-  const items = await listImagesFor(group);
-  return <GridClient items={items} group={group} />;
+  const meta = copy[group] || { title: "Materials", desc: "" };
+
+  return (
+    <main className="max-w-6xl mx-auto px-6 py-8">
+      <GridClient group={group} items={items} title={meta.title} description={meta.desc} />
+    </main>
+  );
 }

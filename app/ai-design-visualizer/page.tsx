@@ -96,7 +96,7 @@ function VisualizerInner() {
   }
 
   return (
-    <main className="max-w-6xl mx-auto px-6 py-10">
+    <main className="max-w-6xl mx-auto px-6 py-10 text-grey-400">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-semibold">AI Design Visualizer</h1>
@@ -122,12 +122,12 @@ function VisualizerInner() {
           )}
 
           <label className="block text-sm font-medium mt-6 mb-2">Extra instructions (optional)</label>
-          <textarea
-            value={instructions}
-            onChange={(e) => setInstructions(e.target.value)}
-            className="w-full border rounded-xl p-3 text-sm min-h-[100px]"
-            placeholder="e.g., ACP on trims, WPC on wall panels; keep windows/doors unchanged."
-          />
+         <textarea
+  value={instructions}
+  onChange={(e) => setInstructions(e.target.value)}
+  className="w-full border rounded-xl p-3 text-sm min-h-[100px] bg-white text-gray-900 placeholder-gray-500"
+  placeholder="e.g., ACP on trims, WPC on wall panels; keep windows/doors unchanged."
+/>
 
           {(selectedIds.length > 0 || externalImagePaths.length > 0) && (
             <div className="mt-4">

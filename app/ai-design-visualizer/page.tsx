@@ -1,14 +1,23 @@
-
+// app/ai-design-visualizer/page.tsx
 "use client";
 export const dynamic = "force-dynamic";
-export const revalidate = 0;
-import { useEffect, useMemo, useState } from "react";
+export const fetchCache = "force-no-store";
+
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { MATERIAL_SAMPLES, type MaterialSample, type MaterialTag } from "@/lib/catalog";
 
 export default function AIDesignVisualizerPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-gray-500">Loading visualizer…</div>}>
+      <VisualizerInner />
+    </Suspense>
+  );
+}
+
+function VisualizerInner() {
   const sp = useSearchParams();
 
   // selected from catalog (slugs) and direct image paths
@@ -19,7 +28,9 @@ export default function AIDesignVisualizerPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [instructions, setInstructions] = useState("Apply the chosen materials appropriately; keep geometry and avoid adding new objects.");
+  const [instructions, setInstructions] = useState(
+    "Apply the chosen materials appropriately; keep geometry and avoid adding new objects."
+  );
 
   const tagsParam = sp.get("tags") || "";
   const materialsParam = sp.get("materials") || sp.get("material") || "";
@@ -89,11 +100,13 @@ export default function AIDesignVisualizerPage() {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-semibold">AI Design Visualizer</h1>
-          <p className="text-sm text-gray-600">Upload your space, pick materials, and generate a photorealistic preview.</p>
+          <p className="text-sm text-gray-600">
+            Upload your space, pick materials, and generate a photorealistic preview.
+          </p>
         </div>
         <div className="flex items-center gap-3">
-          <a href="/" className="text-sm underline">Home</a>
-          <a href="/materials" className="text-sm underline">More options</a>
+          <Link href="/" className="text-sm underline">Home</Link>
+          <Link href="/materials" className="text-sm underline">More options</Link>
         </div>
       </div>
 
@@ -109,13 +122,18 @@ export default function AIDesignVisualizerPage() {
           )}
 
           <label className="block text-sm font-medium mt-6 mb-2">Extra instructions (optional)</label>
-          <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)}
+          <textarea
+            value={instructions}
+            onChange={(e) => setInstructions(e.target.value)}
             className="w-full border rounded-xl p-3 text-sm min-h-[100px]"
-            placeholder="e.g., ACP on trims, WPC on wall panels; keep windows/doors unchanged." />
+            placeholder="e.g., ACP on trims, WPC on wall panels; keep windows/doors unchanged."
+          />
 
           {(selectedIds.length > 0 || externalImagePaths.length > 0) && (
             <div className="mt-4">
-              <div className="text-sm font-medium mb-1">Selected ({selectedIds.length + externalImagePaths.length})</div>
+              <div className="text-sm font-medium mb-1">
+                Selected ({selectedIds.length + externalImagePaths.length})
+              </div>
               <div className="flex flex-wrap gap-2">
                 {selectedIds.map(id => {
                   const item = MATERIAL_SAMPLES.find(s => s.id === id);
@@ -125,13 +143,22 @@ export default function AIDesignVisualizerPage() {
                   const label = p.split("/").pop() || p;
                   return <span key={p} className="px-2 py-1 rounded-full border text-xs">{label}</span>;
                 })}
-                <button type="button" onClick={() => { setSelectedIds([]); setExternalImagePaths([]); }} className="px-2 py-1 rounded-full border text-xs">Clear</button>
+                <button
+                  type="button"
+                  onClick={() => { setSelectedIds([]); setExternalImagePaths([]); }}
+                  className="px-2 py-1 rounded-full border text-xs"
+                >
+                  Clear
+                </button>
               </div>
             </div>
           )}
 
-          <button type="submit" disabled={loading}
-            className="mt-4 inline-flex items-center rounded-xl px-4 py-2 border shadow hover:shadow-md disabled:opacity-60">
+          <button
+            type="submit"
+            disabled={loading}
+            className="mt-4 inline-flex items-center rounded-xl px-4 py-2 border shadow hover:shadow-md disabled:opacity-60"
+          >
             {loading ? "Generating…" : "Generate Design"}
           </button>
         </div>
@@ -139,23 +166,39 @@ export default function AIDesignVisualizerPage() {
         {/* Right */}
         <div>
           <div className="text-sm text-gray-700 mb-2">
-            {tagsParam ? <>Filtered by tags: <code className="text-xs">{tagsParam}</code></> : <>Showing catalog samples</>}
+            {tagsParam ? (
+              <>Filtered by tags: <code className="text-xs">{tagsParam}</code></>
+            ) : (
+              <>Showing catalog samples</>
+            )}
           </div>
 
           <div className="grid grid-cols-3 gap-4">
             {filtered.map((m: MaterialSample) => (
               <div key={m.id} className="rounded-2xl overflow-hidden border flex flex-col">
-                <button type="button" onClick={() => toggle(m.id)}
-                  className={`block w-full text-left ${selectedIds.includes(m.id) ? "ring-2 ring-blue-500" : ""}`} title={m.notes || ""}>
-                  <Image src={m.sampleImage} alt={m.name} width={400} height={300} className="w-full h-auto object-cover" />
+                <button
+                  type="button"
+                  onClick={() => toggle(m.id)}
+                  className={`block w-full text-left ${selectedIds.includes(m.id) ? "ring-2 ring-blue-500" : ""}`}
+                  title={m.notes || ""}
+                >
+                  <Image
+                    src={m.sampleImage}
+                    alt={m.name}
+                    width={400}
+                    height={300}
+                    className="w-full h-auto object-cover"
+                  />
                   <div className="p-2">
                     <div className="text-xs font-medium">{m.name}</div>
                     <div className="text-[11px] opacity-70">{m.tags.join(" • ")}</div>
                   </div>
                 </button>
                 <div className="flex items-center justify-between px-2 pb-2 gap-2">
-                  <a href="/materials" className="text-[12px] underline">View more options</a>
-                  <span className="text-[12px]">{selectedIds.includes(m.id) ? "Selected" : "Tap to select"}</span>
+                  <Link href="/materials" className="text-[12px] underline">View more options</Link>
+                  <span className="text-[12px]">
+                    {selectedIds.includes(m.id) ? "Selected" : "Tap to select"}
+                  </span>
                 </div>
               </div>
             ))}
@@ -167,7 +210,9 @@ export default function AIDesignVisualizerPage() {
               <div className="rounded-2xl overflow-hidden border">
                 <img src={resultUrl} alt="AI result" className="w-full h-auto object-contain" />
               </div>
-              <a href={resultUrl} download="design.png" className="inline-block mt-3 text-sm underline">Download PNG</a>
+              <a href={resultUrl} download="design.png" className="inline-block mt-3 text-sm underline">
+                Download PNG
+              </a>
             </>
           )}
         </div>

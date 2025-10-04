@@ -3,6 +3,22 @@ import Link from "next/link";
 import Image from "next/image";
 import MobileNav from "@/components/MobileNav";
 
+<header className="flex items-center justify-between">
+  <h1 className="text-3xl md:text-4xl font-semibold">Volt Designs</h1>
+
+  {/* Desktop nav */}
+  <nav className="hidden md:flex gap-3">
+    <a href="/" className="text-sm underline">Home</a>
+    <a href="/materials" className="text-sm underline">Material options</a>
+    <a href="/ai-design-visualizer" className="text-sm underline">AI Visualizer</a>
+    <a href="/get-a-quote" className="text-sm underline">Get a Quote</a>
+  </nav>
+
+  {/* Mobile burger */}
+  <MobileNav />
+</header>
+
+
 export const metadata = {
   title: "Volt Designs & Acoustics — ACP, WPC & Acoustic Solutions",
   description:

@@ -3,22 +3,6 @@ import Link from "next/link";
 import Image from "next/image";
 import MobileNav from "@/components/MobileNav";
 
-<header className="flex items-center justify-between">
-  <h1 className="text-3xl md:text-4xl font-semibold">Volt Designs</h1>
-
-  {/* Desktop nav */}
-  <nav className="hidden md:flex gap-3">
-    <a href="/" className="text-sm underline">Home</a>
-    <a href="/materials" className="text-sm underline">Material options</a>
-    <a href="/ai-design-visualizer" className="text-sm underline">AI Visualizer</a>
-    <a href="/get-a-quote" className="text-sm underline">Get a Quote</a>
-  </nav>
-
-  {/* Mobile burger */}
-  <MobileNav />
-</header>
-
-
 export const metadata = {
   title: "Volt Designs & Acoustics — ACP, WPC & Acoustic Solutions",
   description:
@@ -28,12 +12,13 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>
-        <header className="sticky top-0 z-50 bg-black/50 backdrop-blur border-b border-white/10">
-          <div className="container flex items-center justify-between py-3">
+      {/* Global dark theme + vertical layout so footer sits at the bottom */}
+      <body className="min-h-screen bg-black text-white antialiased flex flex-col">
+        {/* Header */}
+        <header className="sticky top-0 z-50 border-b border-white/10 supports-backdrop-blur:bg-black/50 bg-black/80 backdrop-blur">
+          <div className="mx-auto w-full max-w-6xl px-4 md:px-6 flex items-center justify-between py-3">
             {/* Brand / Logo */}
             <Link href="/" className="flex items-center gap-2 font-bold group">
-              {/* Update src if your logo file has a different name/path */}
               <Image
                 src="/logo.png"
                 alt="Volt Designs & Acoustics"
@@ -68,10 +53,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </header>
 
-        <main>{children}</main>
+        {/* Main content (children decide their own width).
+           For most pages we center content using the helper wrapper below. */}
+        <main className="flex-1">{children}</main>
 
+        {/* Footer */}
         <footer className="border-t border-white/10 mt-16">
-          <div className="container py-8 text-sm text-white/70">
+          <div className="mx-auto w-full max-w-6xl px-4 md:px-6 py-8 text-sm text-white/70">
             © {new Date().getFullYear()} Volt Designs & Acoustics. All rights reserved.
           </div>
         </footer>

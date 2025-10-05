@@ -1,48 +1,68 @@
-/* Tailwind layers */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Tailwind v4 */
+@import "tailwindcss";
 
-/* Custom font (example, replace with your preferred font) */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
-html,
-body {
-  padding: 0;
-  margin: 0;
-  font-family: 'Inter', sans-serif;
-  background-color: #0b0b0b; /* Dark background to fit your site style */
-  color: rgb(255, 255, 255);
+/* ---- Theme Helpers ---- */
+:root {
+  /* brand accent */
+  --gold-start: #f7d37a;
+  --gold-end: #f3b84a;
 }
 
-/* Headings */
-h1, h2, h3, h4, h5, h6 {
-  font-weight: 600;
-  line-height: 1.2;
-}
-
-/* Buttons */
+/* ---- Reusable UI bits (no @apply to avoid v4 errors) ---- */
 .btn {
-  @apply px-5 py-2 rounded-lg font-medium transition inline-flex items-center justify-center;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;               /* roughly px-4 py-2 */
+  border-radius: 0.75rem;              /* rounded-xl */
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  text-decoration: none;
+  transition: background 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+  backdrop-filter: blur(8px);
 }
-.btn-gold {
-  @apply bg-yellow-500 hover:bg-yellow-600 text-black;
+.btn:hover {
+  background: rgba(255, 255, 255, 0.12);
 }
+.btn:active {
+  transform: translateY(1px);
+}
+
 .btn-outline {
-  @apply border border-white/40 text-white hover:border-yellow-500 hover:text-yellow-500;
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
-/* Cards */
+.btn-gold {
+  background: linear-gradient(135deg, var(--gold-start), var(--gold-end));
+  border-color: transparent;
+  color: #111;
+  font-weight: 600;
+}
+
 .card {
-  @apply bg-black/40 border border-white/10 rounded-xl p-5;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(6px);
 }
 
-/* Section spacing */
-.section {
-  @apply py-12;
+.glass {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: linear-gradient(
+      to bottom right,
+      rgba(255, 255, 255, 0.10),
+      rgba(255, 255, 255, 0.06)
+    );
+  backdrop-filter: blur(10px);
 }
 
-/* Utility for gold text */
-.text-gold {
-  color: var(--gold, #D4AF37);
+/* Utility tweaks for images inside cards */
+.card img {
+  display: block;
 }
+
+/* Optional: smoother text rendering */
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }

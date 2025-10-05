@@ -31,7 +31,7 @@ export default function HomePage() {
           <div className="relative z-20 min-h-[72vh] flex items-center">
             <div className="glass p-6 md:p-8 rounded-2xl max-w-2xl">
               <h1 className="text-3xl md:text-4xl font-semibold">
-                Innovative Panel & Acoustic Solutions. Impeccably Executed.
+                Innovative Panel & Acoustic Solutions.
               </h1>
               <p className="mt-4 text-white/80">
                 ACP, WPC, CNC, and professional acoustics — design, supply, installation, and noise control.

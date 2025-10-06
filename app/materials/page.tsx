@@ -1,5 +1,9 @@
 // app/materials/page.tsx
 import Link from "next/link";
+// wherever you render the 3 category tiles:
+<>
+  // wherever you render the 3 category tiles:
+  <Link href="/materials/acp" className="card ...">…</Link><Link href="/materials/wpc" className="card ...">…</Link><Link href="/materials/acoustics" className="card ...">…</Link></> ; {/* <- singular */}
 
 export const metadata = {
   title: "Materials",
@@ -17,7 +21,7 @@ export default function MaterialsLanding() {
       <div className="grid md:grid-cols-3 gap-6 mt-8">
         <Card title="ACP" href="/materials/acp" desc="Panels, trims, finishes" />
         <Card title="WPC" href="/materials/wpc" desc="Cladding, slats, panels" />
-      <Card title="Acoustics" href="/materials/acoustics" desc="Reflectors, diffusers, doors" />
+      <Card title="Acoustics" href="/materials/acoustic" desc="Reflectors, diffusers, doors" />
       </div>
     </main>
   );
@@ -30,5 +34,6 @@ function Card({ title, href, desc }: { title: string; href: string; desc: string
       <p className="text-sm text-gray-600 mt-1">{desc}</p>
       <div className="text-sm mt-3 underline">Browse →</div>
     </Link>
+    
   );
 }

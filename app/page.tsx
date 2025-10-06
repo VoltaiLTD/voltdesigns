@@ -23,30 +23,33 @@ export default function HomePage() {
           <source src="/videos/hero-1080.mp4" type="video/mp4" />
         </video>
 
-        {/* gradient veil */}
-        <div className="absolute inset-0 z-10 bg-gradient-to-b from-black/70 via-black/50 to-black/80" />
-
         {/* content */}
         <PageContainer>
-          <div className="relative z-20 min-h-[72vh] flex items-center">
-            <div className="glass p-6 md:p-8 rounded-2xl max-w-2xl">
-              <h1 className="text-3xl md:text-4xl font-semibold">
-                Innovative Panel & Acoustic Solutions.
-              </h1>
-              <p className="mt-4 text-white/80">
-                ACP, WPC, CNC, and professional acoustics — design, supply, installation, and noise control.
-              </p>
+          <div className="relative z-20">
+            <div className="min-h-[75vh] md:min-h-[80vh] flex items-center">
+              <div className="max-w-2xl">
+                {/* ⬇️ Small, more transparent glass ONLY around the title */}
+                <div className="inline-block rounded-2xl bg-white/2 backdrop-blur-md ring-1 ring-white/10 px-4 py-3">
+                  <h1 className="text-gold-400 text-3xl md:text-5xl font-semibold leading-tight drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
+                    Innovative Panel & Acoustic Solutions.
+                  </h1>
+                </div>
 
-              <div className="mt-6 flex flex-wrap gap-3">
-                <Link href="/ai-design-visualizer" className="btn btn-outline">
-                  Upload Your Space
-                </Link>
-                <Link href="/materials" className="btn">
-                  Material options
-                </Link>
-                <Link href="/get-a-quote" className="btn btn-gold">
-                  Request a Quote
-                </Link>
+                <p className="mt-4 text-white/85 drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">
+                  ACP, WPC, CNC, and professional acoustics — design, supply, installation, and noise control.
+                </p>
+
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <Link href="/ai-design-visualizer" className="btn btn-outline">
+                    Upload Your Space
+                  </Link>
+                  <Link href="/materials" className="btn">
+                    Material options
+                  </Link>
+                  <Link href="/get-a-quote" className="btn btn-gold">
+                    Request a Quote
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
@@ -66,11 +69,7 @@ export default function HomePage() {
             {/* ACP */}
             <Link href="/materials/acp" className="card hover:border-white/20 transition flex flex-col">
               <div className="relative w-full h-40 overflow-hidden rounded-md">
-                <img
-                  src="/materials/acp/acp-1.jpg"
-                  alt="ACP"
-                  className="object-cover w-full h-full"
-                />
+                <img src="/materials/acp/acp-1.jpg" alt="ACP" className="object-cover w-full h-full" />
               </div>
               <div className="mt-3">
                 <h3 className="font-semibold">ACP</h3>
@@ -81,11 +80,7 @@ export default function HomePage() {
             {/* WPC */}
             <Link href="/materials/wpc" className="card hover:border-white/20 transition flex flex-col">
               <div className="relative w-full h-40 overflow-hidden rounded-md">
-                <img
-                  src="/materials/wpc/wpc-1.jpg"
-                  alt="WPC"
-                  className="object-cover w-full h-full"
-                />
+                <img src="/materials/wpc/wpc-1.jpg" alt="WPC" className="object-cover w-full h-full" />
               </div>
               <div className="mt-3">
                 <h3 className="font-semibold">WPC</h3>
@@ -93,14 +88,10 @@ export default function HomePage() {
               </div>
             </Link>
 
-            {/* Acoustic — ✅ images linked */}
+            {/* Acoustic */}
             <Link href="/materials/acoustic" className="card hover:border-white/20 transition flex flex-col">
               <div className="relative w-full h-40 overflow-hidden rounded-md">
-                <img
-                  src="/materials/acoustic/acoustic-1.jpg"
-                  alt="Acoustic"
-                  className="object-cover w-full h-full"
-                />
+                <img src="/materials/acoustic/acoustic-1.jpg" alt="Acoustic" className="object-cover w-full h-full" />
               </div>
               <div className="mt-3">
                 <h3 className="font-semibold">Acoustic</h3>

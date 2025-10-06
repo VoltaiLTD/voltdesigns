@@ -28,9 +28,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 priority
               />
               <span className="inline-flex items-baseline gap-1">
-                <span>Volt</span>
-                <span className="text-gold group-hover:opacity-90 transition">Designs</span>
-                <span>&amp; Acoustics</span>
+  <span className="text-yellow-400">Volt</span>
+  <span className="text-gold-400 group-hover:opacity-90 transition">Designs</span>
+  <span className="text-gold-400">&amp; Acoustics</span>
               </span>
             </Link>
 

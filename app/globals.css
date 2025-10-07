@@ -16,7 +16,7 @@
   padding: 0.5rem 1rem;               /* roughly px-4 py-2 */
   border-radius: 0.75rem;              /* rounded-xl */
   border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.12);
   color: #fff;
   text-decoration: none;
   transition: background 120ms ease, box-shadow 120ms ease, transform 120ms ease;

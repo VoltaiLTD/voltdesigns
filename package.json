@@ -1,0 +1,35 @@
+{
+  "name": "volt-designs-acoustics-clean-services",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "lucide-react": "^0.544.0",
+    "next": "^14.2.33",
+    "openai": "^4.104.0",
+    "pdf-lib": "^1.17.1",
+    "qrcode": "^1.5.4",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "resend": "^4.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.14",
+    "@types/node": "^20.14.9",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "14.2.3",
+    "postcss": "^8.5.6",
+    "postcss-nesting": "^13.0.2",
+    "tailwindcss": "^4.1.14",
+    "typescript": "^5.5.4"
+  }
+}

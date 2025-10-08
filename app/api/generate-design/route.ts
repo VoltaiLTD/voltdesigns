@@ -1,3 +1,4 @@
+// app/api/generate-design/route.ts
 import { NextResponse } from "next/server";
 import OpenAI, { toFile } from "openai";
 
@@ -10,7 +11,6 @@ export async function POST(req: Request) {
     if (!apiKey) {
       return NextResponse.json({ error: "Missing OPENAI_API_KEY" }, { status: 500 });
     }
-
     const openai = new OpenAI({ apiKey });
 
     const form = await req.formData();
@@ -22,26 +22,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "space (File) is required" }, { status: 400 });
     }
 
-    const spaceFile = await toFile(
-      Buffer.from(await space.arrayBuffer()),
-      space.name || "space.jpg",
-      { type: space.type || "image/jpeg" }
-    );
+    const spaceBuf = Buffer.from(await space.arrayBuffer());
+    const spaceFile = await toFile(spaceBuf, "space.jpg", { type: "image/jpeg" });
 
     let maskFile: File | undefined;
     if (mask) {
-      maskFile = await toFile(
-        Buffer.from(await mask.arrayBuffer()),
-        mask.name || "mask.png",
-        { type: mask.type || "image/png" }
-      );
+      const maskBuf = Buffer.from(await mask.arrayBuffer());
+      maskFile = await toFile(maskBuf, "mask.png", { type: "image/png" });
     }
 
     const prompt =
       instructions ||
-      "Apply the selected material to the intended areas only. Preserve geometry, lighting and all other surfaces.";
+      "Replace the transparent areas of the mask with a photorealistic new material that matches lighting and perspective. Keep other regions unchanged.";
 
-    // Correct SDK call for image editing
     const result = await openai.images.edit({
       model: "gpt-image-1",
       image: spaceFile,
@@ -50,19 +43,11 @@ export async function POST(req: Request) {
       size: "1024x1024",
     });
 
-    const b64 = result.data?.[0]?.b64_json;
-    if (!b64) {
-      return NextResponse.json({ error: "OpenAI did not return an image." }, { status: 502 });
-    }
-
+    const b64 = result.data[0].b64_json!;
     const png = Buffer.from(b64, "base64");
     return new NextResponse(png, { headers: { "content-type": "image/png" } });
   } catch (err: any) {
     console.error("generate-design error:", err);
-    const msg =
-      err?.response?.data?.error?.message ||
-      err?.message ||
-      "Unexpected error";
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ error: err?.message || "Unexpected error" }, { status: 500 });
   }
 }

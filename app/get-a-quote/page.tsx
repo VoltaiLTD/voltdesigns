@@ -45,6 +45,8 @@ function GetAQuoteInner() {
   const [selectedSlugs, setSelectedSlugs] = useState<string[]>([]);
   const [selectedPaths, setSelectedPaths] = useState<string[]>([]);
 
+  const [sending, setSending] = useState(false);
+
   // hydrate from URL + any draft you stored before
   useEffect(() => {
     const ids = materialsParam.split(",").map(s => s.trim()).filter(Boolean);
@@ -85,15 +87,43 @@ function GetAQuoteInner() {
     setSelectedSlugs([]); setSelectedPaths([]);
   }
 
-  function onSubmit(e: React.FormEvent) {
+  // ⬇️ REPLACED: send to /api/request-quote and email the invoice
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    alert(
-      `Quote requested!\n\nProject: ${projectName}\nClient: ${clientName}\nEmail: ${email}\n` +
-      `Mode: ${billingMode} (${billingMode === "sqm" ? sqm + " sqm" : boards + " boards"})\n` +
-      `Fulfillment: ${fulfillment}\n` +
-      `Items: ${[...selectedSlugs, ...selectedPaths].join(", ") || "none"}\n` +
-      `Estimated total: ₦${estimate.toLocaleString()}`
-    );
+    if (!email) {
+      alert("Please enter a valid email.");
+      return;
+    }
+
+    const payload = {
+      projectName,
+      clientName,
+      email,
+      billingMode,
+      sqm,
+      boards,
+      fulfillment,
+      selectedSlugs,
+      selectedPaths,
+      estimate,
+    };
+
+    try {
+      setSending(true);
+      const res = await fetch("/api/request-quote", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const j = await res.json().catch(() => ({} as any));
+      if (!res.ok) throw new Error(j?.error || `HTTP ${res.status}`);
+      alert(`Quote sent! Please check ${email} for your invoice.`);
+      // Optional: onClear();
+    } catch (err: any) {
+      alert(`Failed to send quote: ${err?.message || err}`);
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -222,9 +252,10 @@ function GetAQuoteInner() {
         <div className="flex gap-3">
           <button
             type="submit"
-            className="rounded-xl px-4 py-2 border shadow hover:shadow-md bg-white text-gray-900"
+            disabled={sending}
+            className="rounded-xl px-4 py-2 border shadow hover:shadow-md bg-white text-gray-900 disabled:opacity-60"
           >
-            Request Quote
+            {sending ? "Sending…" : "Request Quote"}
           </button>
           <button
             type="button"

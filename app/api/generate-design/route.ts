@@ -68,7 +68,6 @@ export async function POST(req: Request) {
       // Defensive: if API responded but no image payload
       return json(502, { error: "No image returned from model." });
     }
-
     const png = Buffer.from(b64, "base64");
     return new NextResponse(png, { headers: { "content-type": "image/png" } });
   } catch (err: any) {

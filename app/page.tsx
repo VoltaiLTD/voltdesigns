@@ -29,7 +29,7 @@ export default function HomePage() {
             <div className="min-h-[75vh] md:min-h-[80vh] flex items-center">
               <div className="max-w-2xl">
                 {/* ⬇️ Small, more transparent glass ONLY around the title */}
-                <div className="inline-block rounded-2xl bg-white/2 backdrop-blur-md ring-1 ring-white/10 px-4 py-3">
+                <div className="inline-block rounded-2xl bg-white/2 backdrop-blur-md ring-1 ring-black/10 px-4 py-3">
                   <h1 className="text-gold-400 text-3xl md:text-5xl font-semibold leading-tight drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
                     Innovative Panel & Acoustic Solutions.
                   </h1>

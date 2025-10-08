@@ -1,7 +1,6 @@
-// app/ai-design-visualizer/page.tsx
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -29,6 +28,7 @@ const SWATCHES = {
 type Swatch = { id: string; name: string; thumb: string };
 type GroupKey = keyof typeof SWATCHES;
 
+/** Small gold-accent button */
 function ToolButton({
   onClick,
   children,
@@ -47,7 +47,7 @@ function ToolButton({
       title={title}
       className={`px-3 py-1 rounded-lg border text-sm transition ${
         active
-          ? "bg-fuchsia-600/20 border-fuchsia-500 text-fuchsia-100"
+          ? "bg-amber-500/20 border-amber-400 text-amber-100"
           : "bg-white/10 border-white/20 hover:bg-white/15"
       }`}
     >
@@ -56,7 +56,7 @@ function ToolButton({
   );
 }
 
-/** Brush canvas with mask export */
+/** Brush canvas (optional mask painting) */
 function BrushCanvas({
   imageUrl,
   brushSize,
@@ -72,17 +72,15 @@ function BrushCanvas({
 }) {
   const baseCanvasRef = useRef<HTMLCanvasElement>(null);
   const maskCanvasRef = useRef<HTMLCanvasElement>(null);
-  const imgRef = useRef<HTMLImageElement | null>(null);
-
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasStrokes, setHasStrokes] = useState(false);
 
-  // Load the image into base canvas (client-only)
+  // Draw uploaded image to base canvas
   useEffect(() => {
+    if (!imageUrl) return;
     const img = new window.Image();
     img.crossOrigin = "anonymous";
     img.onload = () => {
-      imgRef.current = img;
       const base = baseCanvasRef.current!;
       const mask = maskCanvasRef.current!;
       base.width = img.naturalWidth;
@@ -94,21 +92,21 @@ function BrushCanvas({
       bctx.clearRect(0, 0, base.width, base.height);
       bctx.drawImage(img, 0, 0);
 
-      mask.getContext("2d")!.clearRect(0, 0, mask.width, mask.height);
+      const mctx = mask.getContext("2d")!;
+      mctx.clearRect(0, 0, mask.width, mask.height);
       setHasStrokes(false);
       onMaskReady(null);
     };
     img.src = imageUrl;
   }, [imageUrl, onMaskReady]);
 
+  // Export mask in OpenAI format: white(opaque)=keep, transparent=edit
   async function exportMask() {
     const maskCanvas = maskCanvasRef.current!;
     if (!hasStrokes) {
       onMaskReady(null);
       return;
     }
-    // Create an OpenAI-style mask:
-    // white(opaque)=keep, transparent=edit (the painted areas become transparent)
     const out = document.createElement("canvas");
     out.width = maskCanvas.width;
     out.height = maskCanvas.height;
@@ -123,12 +121,13 @@ function BrushCanvas({
     onMaskReady(blob);
   }
 
-  function pointerPos(e: React.PointerEvent<HTMLCanvasElement>) {
-    const canvas = maskCanvasRef.current!;
-    const rect = canvas.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) * canvas.width) / rect.width;
-    const y = ((e.clientY - rect.top) * canvas.height) / rect.height;
-    return { x, y };
+  function pos(e: React.PointerEvent<HTMLCanvasElement>) {
+    const c = maskCanvasRef.current!;
+    const r = c.getBoundingClientRect();
+    return {
+      x: ((e.clientX - r.left) * c.width) / r.width,
+      y: ((e.clientY - r.top) * c.height) / r.height,
+    };
   }
 
   function onPointerDown(e: React.PointerEvent<HTMLCanvasElement>) {
@@ -140,7 +139,7 @@ function BrushCanvas({
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.lineWidth = brushSize;
-    const { x, y } = pointerPos(e);
+    const { x, y } = pos(e);
     ctx.beginPath();
     ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
     ctx.fill();
@@ -153,16 +152,22 @@ function BrushCanvas({
     ctx.globalCompositeOperation = mode === "erase" ? "destination-out" : "source-over";
     ctx.strokeStyle = "#000";
     ctx.lineWidth = brushSize;
-    const { x, y } = pointerPos(e);
+    const { x, y } = pos(e);
     ctx.lineTo(x, y);
     ctx.stroke();
   }
 
   function endStroke() {
-    if (isDrawing) {
-      setIsDrawing(false);
-      exportMask();
-    }
+    if (!isDrawing) return;
+    setIsDrawing(false);
+    exportMask();
+  }
+
+  function clearMask() {
+    const m = maskCanvasRef.current!;
+    m.getContext("2d")!.clearRect(0, 0, m.width, m.height);
+    setHasStrokes(false);
+    onMaskReady(null);
   }
 
   return (
@@ -182,16 +187,8 @@ function BrushCanvas({
         />
       </div>
 
-      {/* Clear button */}
       <div className="absolute right-2 bottom-2 flex gap-2">
-        <ToolButton
-          onClick={() => {
-            const m = maskCanvasRef.current!;
-            m.getContext("2d")!.clearRect(0, 0, m.width, m.height);
-            onMaskReady(null);
-          }}
-          title="Clear mask"
-        >
+        <ToolButton onClick={clearMask} title="Clear">
           Clear
         </ToolButton>
       </div>
@@ -204,46 +201,63 @@ export default function AIDesignVisualizer() {
   const [spaceUrl, setSpaceUrl] = useState<string | null>(null);
   const [maskBlob, setMaskBlob] = useState<Blob | null>(null);
 
+  // multiple selection
   const [group, setGroup] = useState<GroupKey>("acp");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [notes, setNotes] = useState("");
+
   const [brushSize, setBrushSize] = useState(36);
   const [mode, setMode] = useState<"paint" | "erase">("paint");
   const [zoom, setZoom] = useState(1);
-  const [selected, setSelected] = useState<Swatch | null>(null);
-  const [notes, setNotes] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
 
-  const swatches: Swatch[] = useMemo(() => SWATCHES[group], [group]);
+  const swatches = useMemo<Swatch[]>(() => SWATCHES[group], [group]);
 
   function onPickSpace(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] || null;
     setSpaceFile(f);
     setResultUrl(null);
     setMaskBlob(null);
-    if (f) setSpaceUrl(URL.createObjectURL(f));
+    if (f) setSpaceUrl(URL.createObjectURL(f)); // ✅ preview works
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
   }
 
   async function onGenerate() {
     if (!spaceFile) return alert("Please upload a photo of your space.");
-    if (!selected) return alert("Select a material first.");
+    if (!selectedIds.length)
+      return alert("Select at least one material (you can pick multiple).");
     setLoading(true);
     setResultUrl(null);
 
     try {
+      const all = Object.values(SWATCHES).flat();
+      const selectedNames = all
+        .filter((s) => selectedIds.includes(s.id))
+        .map((s) => s.name);
+
       const fd = new FormData();
       fd.append("space", spaceFile);
       if (maskBlob) fd.append("mask", maskBlob, "mask.png");
       fd.append(
         "instructions",
         [
-          `In the transparent (painted) areas, apply a realistic ${selected.name} finish that matches the sample.`,
-          "Keep lighting, scale, and perspective consistent. Do not add or remove objects.",
+          `Apply these materials where painted: ${selectedNames.join(", ")}.`,
+          "Blend lighting, perspective and scale realistically. Do not add or remove objects.",
           notes ? `User notes: ${notes}` : "",
         ]
           .filter(Boolean)
           .join(" ")
       );
+
+      // optional for your route debugging
+      fd.append("materials", JSON.stringify(selectedNames));
 
       const res = await fetch("/api/generate-design", { method: "POST", body: fd });
       if (!res.ok) {
@@ -265,7 +279,7 @@ export default function AIDesignVisualizer() {
         <div>
           <h1 className="text-2xl font-semibold">AI Design Visualizer</h1>
           <p className="text-sm text-white/80">
-            Upload your space, pick a material, paint where it should go, and generate a photorealistic preview.
+            Upload your space, pick one or more materials, paint where they should go, then generate a preview.
           </p>
         </div>
         <div className="flex gap-3">
@@ -292,10 +306,10 @@ export default function AIDesignVisualizer() {
 
               {/* Tools */}
               <div className="flex flex-wrap items-center gap-3">
-                <ToolButton onClick={() => setMode("paint")} active={mode === "paint"} title="Paint material area">
+                <ToolButton onClick={() => setMode("paint")} active={mode === "paint"} title="Paint">
                   Paint
                 </ToolButton>
-                <ToolButton onClick={() => setMode("erase")} active={mode === "erase"} title="Erase painted area">
+                <ToolButton onClick={() => setMode("erase")} active={mode === "erase"} title="Erase">
                   Erase
                 </ToolButton>
 
@@ -341,8 +355,8 @@ export default function AIDesignVisualizer() {
           <button
             type="button"
             onClick={onGenerate}
-            disabled={loading || !spaceFile || !selected}
-            className="rounded-xl px-4 py-2 border border-fuchsia-500/70 bg-fuchsia-600/20 text-fuchsia-100 hover:bg-fuchsia-600/30 disabled:opacity-60"
+            disabled={loading || !spaceFile || !selectedIds.length}
+            className="rounded-xl px-4 py-2 border border-amber-400/70 bg-amber-500/15 text-amber-100 hover:bg-amber-500/25 disabled:opacity-60"
           >
             {loading ? "Generating…" : "Generate Design"}
           </button>
@@ -359,7 +373,7 @@ export default function AIDesignVisualizer() {
                 onClick={() => setGroup(k)}
                 className={`px-3 py-1 rounded-full border text-xs ${
                   group === k
-                    ? "bg-cyan-500/20 border-cyan-400 text-cyan-100"
+                    ? "bg-amber-500/20 border-amber-400 text-amber-100"
                     : "bg-white/10 border-white/20 hover:bg-white/15"
                 }`}
               >
@@ -368,29 +382,34 @@ export default function AIDesignVisualizer() {
             ))}
           </div>
 
+          <div className="text-xs opacity-80">Selected ({selectedIds.length})</div>
+
           <div className="grid grid-cols-3 gap-4">
-            {swatches.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => setSelected(s)}
-                className={`rounded-xl overflow-hidden border transition ${
-                  selected?.id === s.id
-                    ? "border-cyan-400 ring-2 ring-cyan-400/40"
-                    : "border-white/15 hover:border-white/30"
-                }`}
-                title={s.name}
-              >
-                <Image
-                  src={s.thumb}
-                  alt={s.name}
-                  width={400}
-                  height={300}
-                  className="w-full h-auto object-cover"
-                />
-                <div className="text-[12px] px-2 py-1 text-white/85">{s.name}</div>
-              </button>
-            ))}
+            {swatches.map((s) => {
+              const picked = selectedIds.includes(s.id);
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => toggleSelect(s.id)}
+                  className={`rounded-xl overflow-hidden border transition ${
+                    picked
+                      ? "border-amber-400 ring-2 ring-amber-400/40"
+                      : "border-white/15 hover:border-white/30"
+                  }`}
+                  title={s.name}
+                >
+                  <Image
+                    src={s.thumb}
+                    alt={s.name}
+                    width={400}
+                    height={300}
+                    className="w-full h-auto object-cover"
+                  />
+                  <div className="text-[12px] px-2 py-1 text-white/85">{s.name}</div>
+                </button>
+              );
+            })}
           </div>
 
           {resultUrl && (

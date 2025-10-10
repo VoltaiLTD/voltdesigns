@@ -1,6 +1,8 @@
+// app/api/request-quote/route.ts
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { PDFDocument, rgb } from "pdf-lib";
+import fontkit from "@pdf-lib/fontkit";
 import path from "node:path";
 import { promises as fs } from "node:fs";
 
@@ -15,13 +17,28 @@ type QuotePayload = {
   sqm?: number;
   boards?: number;
   fulfillment: "installation" | "delivery";
-  selectedSlugs: string[];     // from catalog (optional)
-  selectedPaths: string[];     // direct image paths (optional)
-  estimate: number;            // already computed client-side OR recompute here
+  selectedSlugs: string[];
+  selectedPaths: string[];
+  estimate: number;
 };
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// ❌ REMOVE this (eager construct causes build crash)
+// const resend = new Resend(process.env.RESEND_API_KEY);
 
+// ✅ Lazy factory (safe at runtime)
+let _resend: Resend | null = null;
+function getResend() {
+  if (_resend) return _resend;
+  const key = process.env.RESEND_API_KEY;
+  if (!key) {
+    // Don’t throw at module load; surface a clear runtime error instead
+    throw new Error("Email service not configured: RESEND_API_KEY is missing");
+  }
+  _resend = new Resend(key);
+  return _resend;
+}
+
+// Keep ₦ in emails and PDFs; the embedded font supports it.
 function naira(n: number) {
   return new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN" }).format(n);
 }
@@ -31,16 +48,32 @@ async function readPublic(relPath: string) {
   return fs.readFile(abs);
 }
 
+async function loadFonts(pdf: PDFDocument) {
+  pdf.registerFontkit(fontkit);
+
+  const regPath = path.join(process.cwd(), "public", "fonts", "NotoSans-Regular.ttf");
+  const regBytes = await fs.readFile(regPath);
+  const noto = await pdf.embedFont(regBytes, { subset: true });
+
+  let notoB = noto;
+  try {
+    const boldPath = path.join(process.cwd(), "public", "fonts", "NotoSans-Bold.ttf");
+    const boldBytes = await fs.readFile(boldPath);
+    notoB = await pdf.embedFont(boldBytes, { subset: true });
+  } catch {
+    // fallback to regular if bold missing
+  }
+  return { noto, notoB };
+}
+
 async function makePdf(payload: QuotePayload) {
   const pdf = await PDFDocument.create();
-  const page = pdf.addPage([595.28, 841.89]); // A4 portrait
-  const { width, height } = page.getSize();
+  const { width, height } = { width: 595.28, height: 841.89 }; // A4
+  const page = pdf.addPage([width, height]);
   const margin = 40;
 
-  const font = await pdf.embedFont(StandardFonts.Helvetica);
-  const fontB = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const { noto, notoB } = await loadFonts(pdf);
 
-  // Try to draw logo (optional)
   try {
     const logoBytes = await readPublic("/logo.png");
     const img = await pdf.embedPng(logoBytes);
@@ -49,100 +82,125 @@ async function makePdf(payload: QuotePayload) {
     page.drawImage(img, { x: margin, y: height - margin - loH, width: loW, height: loH });
   } catch {}
 
-  // Header text
   page.drawText(process.env.COMPANY_NAME || "Volt Designs & Acoustics", {
     x: margin + 70,
     y: height - margin - 18,
     size: 16,
-    font: fontB,
+    font: notoB,
     color: rgb(0.95, 0.8, 0.2),
   });
-  page.drawText("Invoice / Quote", { x: width - margin - 140, y: height - margin - 18, size: 14, font: fontB });
+  page.drawText("Invoice / Quote", {
+    x: width - margin - 140,
+    y: height - margin - 18,
+    size: 14,
+    font: notoB,
+    color: rgb(0, 0, 0),
+  });
 
   const lineY = height - margin - 30;
-  page.drawLine({ start: { x: margin, y: lineY }, end: { x: width - margin, y: lineY }, thickness: 1, color: rgb(1,1,1) });
+  page.drawLine({
+    start: { x: margin, y: lineY },
+    end: { x: width - margin, y: lineY },
+    thickness: 1,
+    color: rgb(1, 1, 1),
+  });
 
-  // Company + invoice meta
   const metaY = lineY - 18;
   const today = new Date();
-  const invNo = `VDA-${today.getFullYear()}${(today.getMonth()+1).toString().padStart(2,"0")}${today.getDate().toString().padStart(2,"0")}-${Math.floor(Math.random()*9000+1000)}`;
+  const invNo = `VDA-${today.getFullYear()}${(today.getMonth() + 1)
+    .toString()
+    .padStart(2, "0")}${today
+    .getDate()
+    .toString()
+    .padStart(2, "0")}-${Math.floor(Math.random() * 9000 + 1000)}`;
 
   const companyBlock = [
     process.env.COMPANY_ADDRESS || "",
     `Phone: ${process.env.COMPANY_PHONE || ""}`,
     `Email: ${process.env.COMPANY_EMAIL || ""}`,
-  ].filter(Boolean).join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 
-  page.drawText(companyBlock, { x: margin, y: metaY, size: 10, font });
+  page.drawText(companyBlock, { x: margin, y: metaY, size: 10, font: noto, color: rgb(0, 0, 0) });
+  page.drawText(`Invoice #: ${invNo}`, { x: width - margin - 200, y: metaY, size: 10, font: noto, color: rgb(0, 0, 0) });
+  page.drawText(`Date: ${today.toLocaleDateString()}`, {
+    x: width - margin - 200,
+    y: metaY - 14,
+    size: 10,
+    font: noto,
+    color: rgb(0, 0, 0),
+  });
 
-  page.drawText(`Invoice #: ${invNo}`, { x: width - margin - 200, y: metaY, size: 10, font });
-  page.drawText(`Date: ${today.toLocaleDateString()}`, { x: width - margin - 200, y: metaY - 14, size: 10, font });
-
-  // Bill To
   let y = metaY - 50;
-  page.drawText("Bill To:", { x: margin, y, size: 12, font: fontB });
+  page.drawText("Bill To:", { x: margin, y, size: 12, font: notoB, color: rgb(0, 0, 0) });
   y -= 16;
-  page.drawText(`${payload.clientName}`, { x: margin, y, size: 11, font });
+  page.drawText(`${payload.clientName}`, { x: margin, y, size: 11, font: noto, color: rgb(0, 0, 0) });
   y -= 14;
-  page.drawText(`${payload.email}`, { x: margin, y, size: 10, font });
+  page.drawText(`${payload.email}`, { x: margin, y, size: 10, font: noto, color: rgb(0, 0, 0) });
 
-  // Project
   y -= 22;
-  page.drawText("Project:", { x: margin, y, size: 12, font: fontB });
+  page.drawText("Project:", { x: margin, y, size: 12, font: notoB, color: rgb(0, 0, 0) });
   y -= 16;
-  page.drawText(payload.projectName || "—", { x: margin, y, size: 11, font });
+  page.drawText(payload.projectName || "—", { x: margin, y, size: 11, font: noto, color: rgb(0, 0, 0) });
 
-  // Items summary
   y -= 28;
-  page.drawText("Items / Notes:", { x: margin, y, size: 12, font: fontB });
+  page.drawText("Items / Notes:", { x: margin, y, size: 12, font: notoB, color: rgb(0, 0, 0) });
   y -= 16;
   const items = [...(payload.selectedSlugs || []), ...(payload.selectedPaths || [])];
   const itemsText = items.length ? items.join(", ") : "—";
-  page.drawText(itemsText.slice(0, 1000), { x: margin, y, size: 10, font, maxWidth: width - margin * 2 });
+  page.drawText(itemsText.slice(0, 1000), {
+    x: margin,
+    y,
+    size: 10,
+    font: noto,
+    color: rgb(0, 0, 0),
+    maxWidth: width - margin * 2,
+  });
 
-  // Totals
   y -= 40;
-  page.drawText("Summary", { x: margin, y, size: 12, font: fontB });
+  page.drawText("Summary", { x: margin, y, size: 12, font: notoB, color: rgb(0, 0, 0) });
   y -= 18;
-  const modeText =
-    payload.billingMode === "sqm"
-      ? `Area: ${payload.sqm ?? 0} sqm`
-      : `Boards: ${payload.boards ?? 0}`;
+  const modeText = payload.billingMode === "sqm" ? `Area: ${payload.sqm ?? 0} sqm` : `Boards: ${payload.boards ?? 0}`;
   const fulfillText = `Fulfillment: ${payload.fulfillment}`;
-  page.drawText(modeText, { x: margin, y, size: 10, font });
+  page.drawText(modeText, { x: margin, y, size: 10, font: noto, color: rgb(0, 0, 0) });
   y -= 14;
-  page.drawText(fulfillText, { x: margin, y, size: 10, font });
+  page.drawText(fulfillText, { x: margin, y, size: 10, font: noto, color: rgb(0, 0, 0) });
 
-  // Total box
   const total = payload.estimate;
   y -= 30;
-  page.drawText("Estimated Total:", { x: width - margin - 200, y, size: 12, font: fontB });
-  page.drawText(naira(total), { x: width - margin - 200, y: y - 18, size: 16, font: fontB, color: rgb(0.95, 0.8, 0.2) });
+  page.drawText("Estimated Total:", { x: width - margin - 200, y, size: 12, font: notoB, color: rgb(0, 0, 0) });
+  page.drawText(naira(total), {
+    x: width - margin - 200,
+    y: y - 18,
+    size: 16,
+    font: notoB,
+    color: rgb(0.95, 0.8, 0.2),
+  });
 
-  // Bank details
   y -= 60;
-  page.drawText("Payment Details", { x: margin, y, size: 12, font: fontB });
+  page.drawText("Payment Details", { x: margin, y, size: 12, font: notoB, color: rgb(0, 0, 0) });
   y -= 16;
   page.drawText(
     `${process.env.COMPANY_BANK_NAME || "Bank"} — ${process.env.COMPANY_ACCOUNT_NAME || "Account Name"}`,
-    { x: margin, y, size: 10, font }
+    { x: margin, y, size: 10, font: noto, color: rgb(0, 0, 0) }
   );
   y -= 14;
-  page.drawText(`Account No: ${process.env.COMPANY_ACCOUNT_NUMBER || "—"}`, { x: margin, y, size: 10, font });
-
-  // Footer line
-  page.drawLine({
-    start: { x: margin, y: 60 },
-    end: { x: width - margin, y: 60 },
-    thickness: 0.5,
-    color: rgb(1,1,1),
+  page.drawText(`Account No: ${process.env.COMPANY_ACCOUNT_NUMBER || "—"}`, {
+    x: margin,
+    y,
+    size: 10,
+    font: noto,
+    color: rgb(0, 0, 0),
   });
+
+  page.drawLine({ start: { x: margin, y: 60 }, end: { x: width - margin, y: 60 }, thickness: 0.5, color: rgb(1, 1, 1) });
   page.drawText("Thank you for choosing Volt Designs & Acoustics.", {
     x: margin,
     y: 45,
     size: 10,
-    font,
-    color: rgb(0.9, 0.9, 0.9),
+    font: noto,
+    color: rgb(0.2, 0.2, 0.2),
   });
 
   const bytes = await pdf.save();
@@ -151,13 +209,17 @@ async function makePdf(payload: QuotePayload) {
 
 function emailHtml(payload: QuotePayload, invNo: string) {
   const payLink = process.env.PAYSTACK_PAYMENT_LINK;
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : "");
+
   return `
     <div style="font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif; color:#111; background:#f7f7f7; padding:24px">
       <table width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden">
         <tr>
           <td style="padding:20px 24px; background:#000; color:#f5d66b;">
             <div style="display:flex;align-items:center;gap:12px">
-              <img src="https://${process.env.NEXT_PUBLIC_VERCEL_URL || "example.com"}/logo.png" width="32" height="32" style="border-radius:6px" alt="Logo" />
+              ${siteUrl ? `<img src="${siteUrl}/logo.png" width="32" height="32" style="border-radius:6px" alt="Logo" />` : ""}
               <div style="font-weight:700">Volt Designs & Acoustics</div>
             </div>
           </td>
@@ -169,9 +231,11 @@ function emailHtml(payload: QuotePayload, invNo: string) {
 
           <div style="margin:16px 0;padding:12px;border:1px solid #eee;border-radius:10px;background:#fafafa">
             <div><strong>Project:</strong> ${payload.projectName || "—"}</div>
-            <div><strong>Mode:</strong> ${payload.billingMode === "sqm" ? `${payload.sqm ?? 0} sqm` : `${payload.boards ?? 0} boards`}</div>
+            <div><strong>Mode:</strong> ${
+              payload.billingMode === "sqm" ? `${payload.sqm ?? 0} sqm` : `${payload.boards ?? 0} boards`
+            }</div>
             <div><strong>Fulfillment:</strong> ${payload.fulfillment}</div>
-            <div><strong>Selected:</strong> ${[...(payload.selectedSlugs||[]), ...(payload.selectedPaths||[])].join(", ") || "—"}</div>
+            <div><strong>Selected:</strong> ${[...(payload.selectedSlugs || []), ...(payload.selectedPaths || [])].join(", ") || "—"}</div>
             <div style="margin-top:8px"><strong>Estimate:</strong> ${naira(payload.estimate)}</div>
           </div>
 
@@ -184,12 +248,14 @@ function emailHtml(payload: QuotePayload, invNo: string) {
           }
 
           <p style="margin:0 0 4px 0; font-weight:600">Company</p>
-          <p style="margin:0 0 2px 0">${process.env.COMPANY_NAME}</p>
-          <p style="margin:0 0 2px 0">${process.env.COMPANY_ADDRESS}</p>
-          <p style="margin:0 0 2px 0">Phone: ${process.env.COMPANY_PHONE}</p>
-          <p style="margin:0 0 2px 0">Email: ${process.env.COMPANY_EMAIL}</p>
+          <p style="margin:0 0 2px 0">${process.env.COMPANY_NAME || "Volt Designs & Acoustics"}</p>
+          <p style="margin:0 0 2px 0">${process.env.COMPANY_ADDRESS || ""}</p>
+          <p style="margin:0 0 2px 0">Phone: ${process.env.COMPANY_PHONE || ""}</p>
+          <p style="margin:0 0 2px 0">Email: ${process.env.COMPANY_EMAIL || ""}</p>
 
-          <p style="margin:16px 0 0 0; color:#666; font-size:12px">Bank: ${process.env.COMPANY_BANK_NAME} • ${process.env.COMPANY_ACCOUNT_NAME} • ${process.env.COMPANY_ACCOUNT_NUMBER}</p>
+          <p style="margin:16px 0 0 0; color:#666; font-size:12px">
+            Bank: ${process.env.COMPANY_BANK_NAME || ""} • ${process.env.COMPANY_ACCOUNT_NAME || ""} • ${process.env.COMPANY_ACCOUNT_NUMBER || ""}
+          </p>
         </td></tr>
       </table>
     </div>
@@ -199,19 +265,17 @@ function emailHtml(payload: QuotePayload, invNo: string) {
 export async function POST(req: Request) {
   try {
     const body: QuotePayload = await req.json();
-
     if (!body?.email) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
-    // Build PDF
     const { bytes, filename, invNo } = await makePdf(body);
 
-    // Send email
     const from = process.env.INVOICE_FROM_EMAIL || "invoices@example.com";
     const html = emailHtml(body, invNo);
 
-    await resend.emails.send({
+    // ✅ Use the lazy instance here
+    await getResend().emails.send({
       from,
       to: body.email,
       subject: `Quote ${invNo} — ${process.env.COMPANY_NAME || "Volt Designs & Acoustics"}`,

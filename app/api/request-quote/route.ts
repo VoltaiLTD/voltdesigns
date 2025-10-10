@@ -5,6 +5,13 @@ import { PDFDocument, rgb } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import path from "node:path";
 import { promises as fs } from "node:fs";
+const stripNairaForPdf = (s: string) => s.replace(/\u20A6/g, "NGN ");
+const formatNairaEmail = (n: number) =>
+  new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN" }).format(n);
+const formatNairaPdf = (n: number, canDrawNaira: boolean) =>
+  canDrawNaira
+    ? new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN" }).format(n)
+    : `NGN ${new Intl.NumberFormat("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)}`;
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,11 +28,6 @@ type QuotePayload = {
   selectedPaths: string[];
   estimate: number;
 };
-
-// ❌ REMOVE this (eager construct causes build crash)
-// const resend = new Resend(process.env.RESEND_API_KEY);
-
-// ✅ Lazy factory (safe at runtime)
 let _resend: Resend | null = null;
 function getResend() {
   if (_resend) return _resend;
@@ -37,8 +39,6 @@ function getResend() {
   _resend = new Resend(key);
   return _resend;
 }
-
-// Keep ₦ in emails and PDFs; the embedded font supports it.
 function naira(n: number) {
   return new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN" }).format(n);
 }
@@ -61,7 +61,6 @@ async function loadFonts(pdf: PDFDocument) {
     const boldBytes = await fs.readFile(boldPath);
     notoB = await pdf.embedFont(boldBytes, { subset: true });
   } catch {
-    // fallback to regular if bold missing
   }
   return { noto, notoB };
 }
@@ -74,6 +73,7 @@ async function makePdf(payload: QuotePayload) {
 
   const { noto, notoB } = await loadFonts(pdf);
 
+  // Logo (optional)
   try {
     const logoBytes = await readPublic("/logo.png");
     const img = await pdf.embedPng(logoBytes);
@@ -82,14 +82,15 @@ async function makePdf(payload: QuotePayload) {
     page.drawImage(img, { x: margin, y: height - margin - loH, width: loW, height: loH });
   } catch {}
 
-  page.drawText(process.env.COMPANY_NAME || "Volt Designs & Acoustics", {
+  // Header
+  page.drawText(stripNairaForPdf(process.env.COMPANY_NAME || "Volt Designs & Acoustics"), {
     x: margin + 70,
     y: height - margin - 18,
     size: 16,
     font: notoB,
     color: rgb(0.95, 0.8, 0.2),
   });
-  page.drawText("Invoice / Quote", {
+  page.drawText(stripNairaForPdf("Invoice / Quote"), {
     x: width - margin - 140,
     y: height - margin - 18,
     size: 14,
@@ -105,14 +106,12 @@ async function makePdf(payload: QuotePayload) {
     color: rgb(1, 1, 1),
   });
 
+  // Meta
   const metaY = lineY - 18;
   const today = new Date();
   const invNo = `VDA-${today.getFullYear()}${(today.getMonth() + 1)
     .toString()
-    .padStart(2, "0")}${today
-    .getDate()
-    .toString()
-    .padStart(2, "0")}-${Math.floor(Math.random() * 9000 + 1000)}`;
+    .padStart(2, "0")}${today.getDate().toString().padStart(2, "0")}-${Math.floor(Math.random() * 9000 + 1000)}`;
 
   const companyBlock = [
     process.env.COMPANY_ADDRESS || "",
@@ -122,9 +121,15 @@ async function makePdf(payload: QuotePayload) {
     .filter(Boolean)
     .join("\n");
 
-  page.drawText(companyBlock, { x: margin, y: metaY, size: 10, font: noto, color: rgb(0, 0, 0) });
-  page.drawText(`Invoice #: ${invNo}`, { x: width - margin - 200, y: metaY, size: 10, font: noto, color: rgb(0, 0, 0) });
-  page.drawText(`Date: ${today.toLocaleDateString()}`, {
+  page.drawText(stripNairaForPdf(companyBlock), { x: margin, y: metaY, size: 10, font: noto, color: rgb(0, 0, 0) });
+  page.drawText(stripNairaForPdf(`Invoice #: ${invNo}`), {
+    x: width - margin - 200,
+    y: metaY,
+    size: 10,
+    font: noto,
+    color: rgb(0, 0, 0),
+  });
+  page.drawText(stripNairaForPdf(`Date: ${today.toLocaleDateString()}`), {
     x: width - margin - 200,
     y: metaY - 14,
     size: 10,
@@ -132,24 +137,27 @@ async function makePdf(payload: QuotePayload) {
     color: rgb(0, 0, 0),
   });
 
+  // Bill To
   let y = metaY - 50;
-  page.drawText("Bill To:", { x: margin, y, size: 12, font: notoB, color: rgb(0, 0, 0) });
+  page.drawText(stripNairaForPdf("Bill To:"), { x: margin, y, size: 12, font: notoB, color: rgb(0, 0, 0) });
   y -= 16;
-  page.drawText(`${payload.clientName}`, { x: margin, y, size: 11, font: noto, color: rgb(0, 0, 0) });
+  page.drawText(stripNairaForPdf(`${payload.clientName}`), { x: margin, y, size: 11, font: noto, color: rgb(0, 0, 0) });
   y -= 14;
-  page.drawText(`${payload.email}`, { x: margin, y, size: 10, font: noto, color: rgb(0, 0, 0) });
+  page.drawText(stripNairaForPdf(`${payload.email}`), { x: margin, y, size: 10, font: noto, color: rgb(0, 0, 0) });
 
+  // Project
   y -= 22;
-  page.drawText("Project:", { x: margin, y, size: 12, font: notoB, color: rgb(0, 0, 0) });
+  page.drawText(stripNairaForPdf("Project:"), { x: margin, y, size: 12, font: notoB, color: rgb(0, 0, 0) });
   y -= 16;
-  page.drawText(payload.projectName || "—", { x: margin, y, size: 11, font: noto, color: rgb(0, 0, 0) });
+  page.drawText(stripNairaForPdf(payload.projectName || "—"), { x: margin, y, size: 11, font: noto, color: rgb(0, 0, 0) });
 
+  // Items / Notes
   y -= 28;
-  page.drawText("Items / Notes:", { x: margin, y, size: 12, font: notoB, color: rgb(0, 0, 0) });
+  page.drawText(stripNairaForPdf("Items / Notes:"), { x: margin, y, size: 12, font: notoB, color: rgb(0, 0, 0) });
   y -= 16;
   const items = [...(payload.selectedSlugs || []), ...(payload.selectedPaths || [])];
   const itemsText = items.length ? items.join(", ") : "—";
-  page.drawText(itemsText.slice(0, 1000), {
+  page.drawText(stripNairaForPdf(itemsText.slice(0, 1000)), {
     x: margin,
     y,
     size: 10,
@@ -158,19 +166,22 @@ async function makePdf(payload: QuotePayload) {
     maxWidth: width - margin * 2,
   });
 
+  // Summary
   y -= 40;
-  page.drawText("Summary", { x: margin, y, size: 12, font: notoB, color: rgb(0, 0, 0) });
+  page.drawText(stripNairaForPdf("Summary"), { x: margin, y, size: 12, font: notoB, color: rgb(0, 0, 0) });
   y -= 18;
   const modeText = payload.billingMode === "sqm" ? `Area: ${payload.sqm ?? 0} sqm` : `Boards: ${payload.boards ?? 0}`;
   const fulfillText = `Fulfillment: ${payload.fulfillment}`;
-  page.drawText(modeText, { x: margin, y, size: 10, font: noto, color: rgb(0, 0, 0) });
+  page.drawText(stripNairaForPdf(modeText), { x: margin, y, size: 10, font: noto, color: rgb(0, 0, 0) });
   y -= 14;
-  page.drawText(fulfillText, { x: margin, y, size: 10, font: noto, color: rgb(0, 0, 0) });
+  page.drawText(stripNairaForPdf(fulfillText), { x: margin, y, size: 10, font: noto, color: rgb(0, 0, 0) });
 
+  // Total (formatted to avoid raw ₦ if necessary)
   const total = payload.estimate;
+  const totalText = formatNairaPdf(total, /*canDrawNaira=*/ false); // force NGN-safe text
   y -= 30;
-  page.drawText("Estimated Total:", { x: width - margin - 200, y, size: 12, font: notoB, color: rgb(0, 0, 0) });
-  page.drawText(naira(total), {
+  page.drawText(stripNairaForPdf("Estimated Total:"), { x: width - margin - 200, y, size: 12, font: notoB, color: rgb(0, 0, 0) });
+  page.drawText(stripNairaForPdf(totalText), {
     x: width - margin - 200,
     y: y - 18,
     size: 16,
@@ -178,15 +189,16 @@ async function makePdf(payload: QuotePayload) {
     color: rgb(0.95, 0.8, 0.2),
   });
 
+  // Payment Details
   y -= 60;
-  page.drawText("Payment Details", { x: margin, y, size: 12, font: notoB, color: rgb(0, 0, 0) });
+  page.drawText(stripNairaForPdf("Payment Details"), { x: margin, y, size: 12, font: notoB, color: rgb(0, 0, 0) });
   y -= 16;
   page.drawText(
-    `${process.env.COMPANY_BANK_NAME || "Bank"} — ${process.env.COMPANY_ACCOUNT_NAME || "Account Name"}`,
+    stripNairaForPdf(`${process.env.COMPANY_BANK_NAME || "Bank"} — ${process.env.COMPANY_ACCOUNT_NAME || "Account Name"}`),
     { x: margin, y, size: 10, font: noto, color: rgb(0, 0, 0) }
   );
   y -= 14;
-  page.drawText(`Account No: ${process.env.COMPANY_ACCOUNT_NUMBER || "—"}`, {
+  page.drawText(stripNairaForPdf(`Account No: ${process.env.COMPANY_ACCOUNT_NUMBER || "—"}`), {
     x: margin,
     y,
     size: 10,
@@ -194,8 +206,9 @@ async function makePdf(payload: QuotePayload) {
     color: rgb(0, 0, 0),
   });
 
+  // Footer
   page.drawLine({ start: { x: margin, y: 60 }, end: { x: width - margin, y: 60 }, thickness: 0.5, color: rgb(1, 1, 1) });
-  page.drawText("Thank you for choosing Volt Designs & Acoustics.", {
+  page.drawText(stripNairaForPdf("Thank you for choosing Volt Designs & Acoustics."), {
     x: margin,
     y: 45,
     size: 10,
@@ -206,7 +219,6 @@ async function makePdf(payload: QuotePayload) {
   const bytes = await pdf.save();
   return { bytes, filename: `${invNo}.pdf`, invNo, total };
 }
-
 function emailHtml(payload: QuotePayload, invNo: string) {
   const payLink = process.env.PAYSTACK_PAYMENT_LINK;
   const siteUrl =

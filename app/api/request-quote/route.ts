@@ -301,17 +301,34 @@ function emailHtml(payload: QuotePayload, invNo: string) {
 
 export async function POST(req: Request) {
   try {
+    // NEW: support direct download mode
+    const url = new URL(req.url);
+    const wantsDownload = url.searchParams.get("download") === "1";
+
     const body: QuotePayload = await req.json();
-    if (!body?.email) {
+
+    // Only require email when sending via Resend (not for download mode)
+    if (!wantsDownload && !body?.email) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
     const { bytes, filename, invNo } = await makePdf(body);
 
+    // If client wants to download the PDF, return it directly
+    if (wantsDownload) {
+      return new NextResponse(Buffer.from(bytes), {
+        headers: {
+          "content-type": "application/pdf",
+          "content-disposition": `attachment; filename="${filename}"`,
+          "cache-control": "no-store",
+        },
+      });
+    }
+
+    // Otherwise, send via email (existing behavior)
     const from = process.env.INVOICE_FROM_EMAIL || "invoices@example.com";
     const html = emailHtml(body, invNo);
 
-    // ✅ Use the lazy instance here
     await getResend().emails.send({
       from,
       to: body.email,

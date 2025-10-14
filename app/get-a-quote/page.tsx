@@ -46,6 +46,7 @@ function GetAQuoteInner() {
   const [selectedPaths, setSelectedPaths] = useState<string[]>([]);
 
   const [sending, setSending] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   // hydrate from URL + any draft you stored before
   useEffect(() => {
@@ -87,7 +88,7 @@ function GetAQuoteInner() {
     setSelectedSlugs([]); setSelectedPaths([]);
   }
 
-  // ⬇️ REPLACED: send to /api/request-quote and email the invoice
+  // Email the quote (existing flow; unchanged visually)
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email) {
@@ -118,11 +119,55 @@ function GetAQuoteInner() {
       const j = await res.json().catch(() => ({} as any));
       if (!res.ok) throw new Error(j?.error || `HTTP ${res.status}`);
       alert(`Quote sent! Please check ${email} for your invoice.`);
-      // Optional: onClear();
     } catch (err: any) {
       alert(`Failed to send quote: ${err?.message || err}`);
     } finally {
       setSending(false);
+    }
+  }
+
+  // NEW: Download the PDF directly (no email needed)
+  async function onDownload() {
+    const payload = {
+      projectName,
+      clientName,
+      email, // harmless if empty; server ignores it in download mode
+      billingMode,
+      sqm,
+      boards,
+      fulfillment,
+      selectedSlugs,
+      selectedPaths,
+      estimate,
+    };
+
+    try {
+      setDownloading(true);
+      const res = await fetch("/api/request-quote?download=1", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({} as any));
+        throw new Error(j?.error || `HTTP ${res.status}`);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+
+      // Trigger a download
+      const a = document.createElement("a");
+      a.href = url;
+      // Filename will be provided by content-disposition, but fall back:
+      a.download = "quote.pdf";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert(`Failed to download PDF: ${err?.message || err}`);
+    } finally {
+      setDownloading(false);
     }
   }
 
@@ -257,6 +302,17 @@ function GetAQuoteInner() {
           >
             {sending ? "Sending…" : "Request Quote"}
           </button>
+
+          {/* NEW: Download PDF (no email needed) */}
+          <button
+            type="button"
+            onClick={onDownload}
+            disabled={downloading}
+            className="rounded-xl px-4 py-2 border shadow hover:shadow-md bg-white text-gray-900 disabled:opacity-60"
+          >
+            {downloading ? "Preparing PDF…" : "Download PDF"}
+          </button>
+
           <button
             type="button"
             onClick={onClear}

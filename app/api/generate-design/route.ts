@@ -54,7 +54,6 @@ export async function POST(req: Request) {
       "Apply the selected finish to the appropriate regions while keeping lighting and perspective consistent. Do not add or remove objects.";
 
     // 4) Call OpenAI Images Edit (gpt-image-1)
-    //    If your account can't use this endpoint/model, this will throw — we catch and show the real error.
     const result = await openai.images.edit({
       model: "gpt-image-1",
       image: spaceFile,
@@ -65,14 +64,12 @@ export async function POST(req: Request) {
 
     const b64 = result?.data?.[0]?.b64_json;
     if (!b64) {
-      // Defensive: if API responded but no image payload
       return json(502, { error: "No image returned from model." });
     }
     const png = Buffer.from(b64, "base64");
     return new NextResponse(png, { headers: { "content-type": "image/png" } });
   } catch (err: any) {
-    // 5) Make the *real* upstream error visible in logs & response
-    // OpenAI SDK often puts specifics on err.response.data
+    // 5) Surface real upstream error
     const status = err?.status || err?.response?.status || 500;
     const detail =
       err?.response?.data ||

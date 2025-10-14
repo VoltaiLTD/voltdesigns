@@ -215,6 +215,25 @@ export default function AIDesignVisualizer() {
 
   const swatches = useMemo<Swatch[]>(() => SWATCHES[group], [group]);
 
+  // All swatches (for name lookup)
+  const allSwatches = useMemo<Swatch[]>(
+    () => Object.values(SWATCHES).flat(),
+    []
+  );
+
+  // Selected swatch objects (for names + thumbs)
+  const selectedSwatches = useMemo<Swatch[]>(
+    () => allSwatches.filter((s) => selectedIds.includes(s.id)),
+    [allSwatches, selectedIds]
+  );
+
+  // Build /get-a-quote URL with selected material IDs + swatch images
+  const quoteHref = useMemo(() => {
+    const materialsParam = encodeURIComponent(selectedSwatches.map((s) => s.id).join(","));
+    const imagesParam = selectedSwatches.map((s) => encodeURIComponent(s.thumb)).join(",");
+    return `/get-a-quote?materials=${materialsParam}&images=${imagesParam}`;
+  }, [selectedSwatches]);
+
   function onPickSpace(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] || null;
     setSpaceFile(f);
@@ -237,10 +256,7 @@ export default function AIDesignVisualizer() {
     setResultUrl(null);
 
     try {
-      const all = Object.values(SWATCHES).flat();
-      const selectedNames = all
-        .filter((s) => selectedIds.includes(s.id))
-        .map((s) => s.name);
+      const selectedNames = selectedSwatches.map((s) => s.name);
 
       const fd = new FormData();
       fd.append("space", spaceFile);
@@ -256,7 +272,7 @@ export default function AIDesignVisualizer() {
           .join(" ")
       );
 
-      // optional for your route debugging
+      // Optional for server logging/debug
       fd.append("materials", JSON.stringify(selectedNames));
 
       const res = await fetch("/api/generate-design", { method: "POST", body: fd });
@@ -352,14 +368,27 @@ export default function AIDesignVisualizer() {
             </div>
           )}
 
-          <button
-            type="button"
-            onClick={onGenerate}
-            disabled={loading || !spaceFile || !selectedIds.length}
-            className="rounded-xl px-4 py-2 border border-amber-400/70 bg-amber-500/15 text-amber-100 hover:bg-amber-500/25 disabled:opacity-60"
-          >
-            {loading ? "Generating…" : "Generate Design"}
-          </button>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onGenerate}
+              disabled={loading || !spaceFile || !selectedIds.length}
+              className="rounded-xl px-4 py-2 border border-amber-400/70 bg-amber-500/15 text-amber-100 hover:bg-amber-500/25 disabled:opacity-60"
+            >
+              {loading ? "Generating…" : "Generate Design"}
+            </button>
+
+            {/* Link to Get a Quote with selected materials */}
+            <Link
+              href={quoteHref}
+              prefetch={false}
+              className={`rounded-xl px-4 py-2 border ${
+                selectedIds.length === 0 ? "pointer-events-none opacity-60" : "hover:shadow"
+              } border-amber-400/70 bg-amber-500/10 text-amber-100`}
+            >
+              Get a Quote
+            </Link>
+          </div>
         </div>
 
         {/* RIGHT: Category + Swatches + Result */}

@@ -2,12 +2,18 @@ import "./globals.css";
 import Link from "next/link";
 import Image from "next/image";
 import MobileNav from "@/components/MobileNav";
+import MobileHeader from "@/components/MobileHeader";
+import DesktopHeader from "@/components/desktopheader";
 
 export const metadata = {
   title: "Volt Designs & Acoustics — ACP, WPC & Acoustic Solutions",
   description:
     "Premium ACP, WPC, CNC, and acoustic solutions: design, supply, installation, and noise control.",
 };
+<header>
+  <MobileHeader />
+  <DesktopHeader className="hidden md:block" />
+</header>
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

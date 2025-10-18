@@ -144,10 +144,3 @@ export default function MobileHeader() {
   );
 }
 
-/* Tailwind helper (in globals.css):
-@keyframes slide-in {
-  from { transform: translateX(100%); }
-  to   { transform: translateX(0%); }
-}
-.animate-slide-in { animation: slide-in 180ms ease-out both; }
-*/

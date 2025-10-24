@@ -3,28 +3,46 @@
 
 import Link from "next/link";
 
-export default function DesktopHeader() {
-  return (
-    <div className="hidden md:flex items-center justify-between px-6 py-4 bg-black/60 backdrop-blur-md">
-      <Link href="/" className="text-white font-semibold tracking-wide">
-        Volt Designs &amp; Acoustics
-      </Link>
+type Props = { className?: string };
 
-      <nav className="flex items-center gap-6 text-sm text-white/90">
-        <Link href="/products" className="hover:opacity-80">Products</Link>
-        <Link href="/services" className="hover:opacity-80">Services</Link>
-        <Link href="/ai-design-visualizer" className="hover:opacity-80">AI Visualizer</Link>
-        <Link href="/portfolio" className="hover:opacity-80">Portfolio</Link>
-        <Link href="/about" className="hover:opacity-80">About</Link>
-        <Link href="/blog" className="hover:opacity-80">Blog</Link>
-        <Link href="/contact" className="hover:opacity-80">Contact</Link>
-        <Link
-          href="/get-a-quote"
-          className="rounded-lg border border-amber-400/50 px-3 py-1 bg-amber-500/10 text-amber-100 hover:bg-amber-500/20"
-        >
-          Get a Quote
-        </Link>
-      </nav>
-    </div>
+function NavPill({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className="inline-flex items-center rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-sm
+                 backdrop-blur transition hover:bg-white/10 hover:border-white/20"
+    >
+      {children}
+    </Link>
+  );
+}
+
+export default function DesktopHeader({ className = "" }: Props) {
+  return (
+    <nav className={`hidden md:flex items-center gap-3 ${className}`}>
+      <NavPill href="/products">Products</NavPill>
+      <NavPill href="/services">Services</NavPill>
+      <NavPill href="/ai-design-visualizer">AI Visualizer</NavPill>
+      <NavPill href="/portfolio">Portfolio</NavPill>
+      <NavPill href="/about-us">About</NavPill>
+      <NavPill href="/blog">Blog</NavPill>
+      <NavPill href="/contact">Contact</NavPill>
+
+      {/* Emphasized CTA */}
+      <Link
+        href="/get-a-quote"
+        className="ml-1 inline-flex items-center rounded-xl border border-amber-400/40 bg-amber-500/15
+                   px-3.5 py-1.5 text-sm text-amber-100 backdrop-blur transition
+                   hover:bg-amber-500/25 hover:border-amber-400/60"
+      >
+        Get a Quote
+      </Link>
+    </nav>
   );
 }

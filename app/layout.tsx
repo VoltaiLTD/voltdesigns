@@ -1,26 +1,29 @@
 // app/layout.tsx
 import "./globals.css";
+import type { Metadata } from "next";
+import type { ReactNode } from "react";
+
 import Link from "next/link";
 import Image from "next/image";
 
 // Mobile drawer / hamburger
 import MobileNav from "@/components/MobileNav";
 
-// Desktop navigation (make sure the file is exactly components/desktopheader.tsx)
+// Desktop navigation (make sure the file is exactly components/DesktopHeader.tsx)
 import DesktopHeader from "@/components/desktopheader";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Volt Designs & Acoustics — ACP, WPC & Acoustic Solutions",
   description:
     "Premium ACP, WPC, CNC, and acoustic solutions: design, supply, installation, and noise control.",
   icons: {
-    icon: "/icon.png",          // or "/icon.png"
+    icon: "/icon.png",
     shortcut: "/icon.png",
-    apple: "/apple-touch-icon.png" // optional if you add one
+    apple: "/apple-touch-icon.png",
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body className="min-h-screen bg-neutral-900 text-white antialiased flex flex-col">
@@ -39,7 +42,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               />
               <span className="inline-flex items-baseline gap-1">
                 <span className="text-yellow-400">Volt</span>
-                <span className="text-white group-hover:opacity-90 transition">Designs</span>
+                <span className="text-white group-hover:opacity-90 transition">
+                  Designs
+                </span>
                 <span className="text-white">&amp; Acoustics</span>
               </span>
             </Link>
@@ -64,7 +69,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Footer */}
         <footer className="border-t border-white/10 mt-16">
           <div className="mx-auto w-full max-w-6xl px-4 md:px-6 py-8 text-sm text-white/70">
-            © {new Date().getFullYear()} Volt Designs & Acoustics. All rights reserved.
+            © {new Date().getFullYear()} Volt Designs & Acoustics. All rights
+            reserved.
           </div>
         </footer>
       </body>

@@ -9,7 +9,7 @@ import Image from "next/image";
 // Mobile drawer / hamburger
 import MobileNav from "@/components/MobileNav";
 
-// Desktop navigation (file MUST be components/DesktopHeader.tsx)
+// Desktop navigation (make sure the file is exactly components/DesktopHeader.tsx)
 import DesktopHeader from "@/components/DesktopHeader";
 
 export const metadata: Metadata = {
@@ -69,7 +69,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         {/* Footer */}
         <footer className="border-t border-white/10 mt-16">
           <div className="mx-auto w-full max-w-6xl px-4 md:px-6 py-8 text-sm text-white/70">
-            © {new Date().getFullYear()} Volt Designs & Acoustics. All rights reserved.
+            © {new Date().getFullYear()} Volt Designs & Acoustics. All rights
+            reserved.
           </div>
         </footer>
       </body>

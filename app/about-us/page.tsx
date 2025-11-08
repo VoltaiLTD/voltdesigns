@@ -34,7 +34,7 @@ export default function AboutUsPage() {
       <div className="card mt-6">
         <h3 className="font-semibold">Contact</h3>
         <p className="text-white/80 text-sm mt-2">
-          Email: <a href="mailto:voltai.ltd@hotmail.com" className="underline">voltai.ltd@hotmail.com</a> ·
+          Email: <a href="mailto:info@voltdesigns.co" className="underline">info@voltdesigns.co</a> ·
           Phone/WhatsApp: <a href="tel:+2347963859211" className="underline">+234 706 385 9211</a>
         </p>
       </div>

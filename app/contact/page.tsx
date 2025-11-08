@@ -11,7 +11,7 @@ export default function ContactPage() {
       <div className="grid md:grid-cols-3 gap-6 mt-6">
         <div className="card space-y-2">
           <h3 className="font-semibold">Reach us</h3>
-          <p>Email: <a className="underline" href="mailto:voltai.ltd@hotmail.com">voltai.ltd@hotmail.com</a></p>
+          <p>Email: <a className="underline" href="mailto:voltai.ltd@hotmail.com">info@voltdesigns.co</a></p>
           <p>Phone/WhatsApp: <a className="underline" href="tel:+2347063859211">+234 706 385 9211</a></p>
           <p className="text-sm text-white/70">Office/Showroom: Lekki County Homes, Ikota, Lagos, Nigeria</p>
           <p className="text-sm text-white/70">Mon–Sat, 9:00–18:00 WAT</p>

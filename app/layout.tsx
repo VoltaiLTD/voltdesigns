@@ -11,17 +11,20 @@ import MobileNav from "@/components/MobileNav";
 
 // Desktop navigation (file MUST be components/DesktopHeader.tsx)
 import DesktopHeader from "@/components/DesktopHeader";
+
 export const metadata: Metadata = {
   title: "Volt Designs & Acoustics — ACP, WPC & Acoustic Solutions",
   description:
     "Premium ACP, WPC, CNC, and acoustic solutions: design, supply, installation, and noise control.",
   icons: {
-    icon: "/icon.png?v=2",
-    shortcut: "/icon.png?v=2",
-    apple: "/apple-touch-icon.png?v=2",
+    // favicon for most browsers
+    icon: "/Icon.png",
+    // optional extra icon
+    shortcut: "/Icon.png",
+    // apple touch icon
+    apple: "/apple-touch-icon.png",
   },
 };
-
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

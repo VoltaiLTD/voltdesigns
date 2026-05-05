@@ -4,7 +4,22 @@ import Link from "next/link";
 function PageContainer({ children }: { children: React.ReactNode }) {
   return <div className="mx-auto w-full max-w-6xl px-4 md:px-6">{children}</div>;
 }
-
+<script
+  type="application/ld+json"
+  dangerouslySetInnerHTML={{
+    __html: JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: "Volt Designs & Acoustics",
+      legalName: "Volt Designs & Acoustics",
+      url: "https://voltdesigns.co",
+      logo: "https://voltdesigns.co/logo.png",
+      description:
+        "Volt Designs & Acoustics provides ACP, WPC, CNC, acoustic design, noise control, acoustic treatment, and specialist interior finishing solutions in Nigeria.",
+      areaServed: "Nigeria",
+      sameAs: [],
+    }),
+  }}
 export default function HomePage() {
   return (
     <>

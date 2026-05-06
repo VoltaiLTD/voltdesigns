@@ -3,7 +3,9 @@
 
 import Link from "next/link";
 
-type Props = { className?: string };
+type Props = {
+  className?: string;
+};
 
 function NavPill({
   href,
@@ -16,7 +18,7 @@ function NavPill({
     <Link
       href={href}
       className="inline-flex items-center rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-sm
-                 backdrop-blur transition hover:bg-white/10 hover:border-white/20"
+                 backdrop-blur transition hover:border-white/20 hover:bg-white/10"
     >
       {children}
     </Link>
@@ -25,7 +27,9 @@ function NavPill({
 
 export default function DesktopHeader({ className = "" }: Props) {
   return (
-    <nav className={`hidden md:flex items-center gap-3 ${className}`}>
+    <nav
+      className={`hidden items-center justify-end gap-3 md:flex ${className}`}
+    >
       <NavPill href="/products">Products</NavPill>
       <NavPill href="/services">Services</NavPill>
       <NavPill href="/ai-design-visualizer">AI Visualizer</NavPill>
@@ -39,7 +43,7 @@ export default function DesktopHeader({ className = "" }: Props) {
         href="/get-a-quote"
         className="ml-1 inline-flex items-center rounded-xl border border-amber-400/40 bg-amber-500/15
                    px-3.5 py-1.5 text-sm text-amber-100 backdrop-blur transition
-                   hover:bg-amber-500/25 hover:border-amber-400/60"
+                   hover:border-amber-400/60 hover:bg-amber-500/25"
       >
         Get a Quote
       </Link>

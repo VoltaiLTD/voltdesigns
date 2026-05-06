@@ -32,7 +32,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="min-h-screen bg-neutral-900 text-white antialiased flex flex-col">
         {/* Header */}
         <header className="sticky top-0 z-50 border-b border-white/10 supports-backdrop-blur:bg-black/50 bg-black/80 backdrop-blur">
-          <div className="mx-auto w-full max-w-6xl px-4 md:px-6 flex items-center justify-between py-3">
+          <div className="flex w-full items-center justify-between px-4 py-3 md:px-6 lg:px-20 xl:px-24">
             {/* Brand / Logo */}
             <Link href="/" className="flex items-center gap-2 font-bold group">
               <Image
@@ -58,6 +58,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <div className="hidden md:block">
                 <DesktopHeader />
               </div>
+
               {/* Mobile hamburger / drawer trigger */}
               <div className="md:hidden">
                 <MobileNav />
@@ -72,7 +73,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         {/* Footer */}
         <footer className="border-t border-white/10 mt-16">
           <div className="mx-auto w-full max-w-6xl px-4 md:px-6 py-8 text-sm text-white/70">
-            © {new Date().getFullYear()} Volt Designs & Acoustics. All rights reserved.
+            © {new Date().getFullYear()} Volt Designs & Acoustics. All rights
+            reserved.
           </div>
         </footer>
       </body>

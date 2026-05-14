@@ -73,6 +73,11 @@ export default function HomePage() {
               <Link href="/get-a-quote" className="btn btn-gold">
                 Request a Quote
               </Link>
+
+              {/* T60 Analysis Button added here */}
+              <a href="#t60-analysis" className="btn btn-outline">
+                T60 Analysis
+              </a>
             </div>
           </div>
         </div>
@@ -152,6 +157,27 @@ export default function HomePage() {
                 </p>
               </div>
             </Link>
+          </div>
+        </PageContainer>
+      </section>
+
+      {/* Oodio T60 Calculator Iframe Embedded Here */}
+      <section id="t60-analysis" className="mt-16 mb-16 pt-8 border-t border-white/10">
+        <PageContainer>
+          <h2 className="text-xl font-semibold">T60 Acoustic Analysis</h2>
+          <p className="mt-2 max-w-2xl text-white/70 mb-6">
+            Calculate and optimize your room's reverberation time instantly using our integrated Oodio measurement tool.
+          </p>
+          
+          <div className="w-full overflow-hidden rounded-xl border border-white/20 bg-black/40 h-[750px]">
+            <iframe
+              src="https://oodio.vercel.app/"
+              width="100%"
+              height="100%"
+              className="border-0"
+              title="Oodio T60 Calculator"
+              allow="microphone" 
+            />
           </div>
         </PageContainer>
       </section>
